@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(max_workers=30)
 
+from .video_io import open_video_source
 from .preprocess import change_image
 from .export import export_to_excel
 from .tracking import init_tracker, update_tracking
@@ -226,18 +227,6 @@ def select_video_source():
 
     source_window.mainloop()
 
-
-def open_video_source(source):
-    if isinstance(source, int):
-        for api in [cv2.CAP_MSMF, cv2.CAP_DSHOW, cv2.CAP_ANY]:
-            cap = cv2.VideoCapture(source, api)
-            if cap.isOpened():
-                return cap
-            cap.release()
-        return None
-    else:
-        return cv2.VideoCapture(source)
-
 def start_main_program():
     global VIDEO_PATHS, SPECIAL_VIDEO_PATH
     
@@ -310,31 +299,6 @@ def show_special_video():
     cap.release()
     cv2.destroyWindow("Специальное видео")
     print(">>> Поток спецвидео завершён")
-
-
-def process_image(roi, area_id, timestamp):
-    try:
-        text1 = pytesseract.image_to_string(roi,
-                    config=r'--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789').strip()
-        if len(text1) == 4:
-            results = reader.readtext(roi, detail=0, paragraph = False, batch_size=4, #contrast_ths=0.1,adjust_contrast=0.5, decoder='beamsearch',
-                allowlist='0123456789') #adjust_contrast=0.5) , decoder='greedy'  batch_size=4
-            text2 = ''.join(results).strip()
-            if text1 == text2:
-                return area_id, str(text1), timestamp
-
-        results = reader.readtext(roi,detail=0, paragraph = False, batch_size=4, #contrast_ths=0.1,adjust_contrast=0.5, decoder='beamsearch',
-                allowlist='0123456789')
-        text2 = ''.join(results).strip()
-        if len(text2) == 4:
-            text1 = pytesseract.image_to_string(roi,
-                    config=r'--oem 3 --psm 8 tessedit_char_whitelist=0123456789').strip()
-            if text1 == text2:
-                return area_id, str(text2), timestamp
-        return area_id, "", timestamp
-    except Exception as e:
-        print(f"Ошибка обработки: {e}")
-        return area_id, "", timestamp
 
 def worker():
     while True:
