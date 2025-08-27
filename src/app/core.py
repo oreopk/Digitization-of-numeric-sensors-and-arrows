@@ -1,6 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(max_workers=30)
 
+from .export import export_to_excel
+from .tracking import init_tracker, update_tracking
 from .utils import center_window_winapi, get_available_cameras, get_available_cameras_mini
 from .ocr import reader, process_image
 from .video_gui import run_dial_video_gui
@@ -307,39 +309,6 @@ def show_special_video():
     cap.release()
     cv2.destroyWindow("Специальное видео")
     print(">>> Поток спецвидео завершён")
-
-def export_to_excel():
-    try:
-        data = []
-        with history_lock:
-            for i, area in enumerate(tracked_areas):
-                if area.history and area.history_timestamps:
-                    for timestamp, value in zip(area.history_timestamps, area.history):
-                        data.append({
-                            "Area": i + 1,
-                            "Time": datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S'),
-                            "Value": value
-                        })
-        
-        if not data:
-            print("Нет данных для экспорта")
-            return
-        
-        df = pd.DataFrame(data)
-        filename = f"ocr_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        df.to_excel(filename, index=False, engine='openpyxl')
-        print(f"Данные экспортированы в {filename}")
-    except Exception as e:
-        print(f"Ошибка при экспорте в Excel: {e}")
-
-
-def init_tracker(frame, bbox):
-    x, y, w, h = bbox
-    if w <= 0 or h <= 0:
-        raise ValueError(f"Неверный размер bbox: ширина={w}, высота={h}")
-    tracker = cv2.legacy.TrackerKCF_create()
-    tracker.init(frame, bbox)
-    return tracker
 
 
 def adjust_contrast(frame, contrast=2.1):
@@ -696,36 +665,6 @@ def mouse_callback(event, x, y, flags, param):
                 area.active = True
                 update_plots()
 
-def update_tracking(frame):
-    if not tracking_enabled:
-        return frame
-    for i, area in enumerate(tracked_areas):
-        if area.tracker is None or not area.active:
-            if area.coords:
-                x1, y1, x2, y2 = area.coords
-                w, h = x2 - x1, y2 - y1
-                try:
-                    area.tracker = init_tracker(frame, (x1, y1, w, h))
-                    area.active = True
-                except Exception as e:
-                    print(f"Ошибка инициализации трекера для области {i}: {e}")
-                    area.active = False
-                    continue
-        
-        try:
-            success, box = area.tracker.update(frame)
-            if success:
-                x, y, w, h = [int(v) for v in box]
-                area.coords = [x, y, x + w, y + h]
-            else:
-                area.active = False
-        except Exception as e:
-            print(f"Ошибка обновления трекера для области {i}: {e}")
-            area.active = False
-
-    return frame
-
-
 def on_seek(val):
     global current_frame_pos, caps, status_video
     if not caps:
@@ -971,7 +910,7 @@ def create_empty_window():
     task_info_label = ttk.Label(status_frame, text="Задачи: 0 | Обработано: 0", font=('Helvetica', 10))
     task_info_label.pack(side=tk.LEFT, padx=5)
 
-    export_button = ttk.Button(status_frame, text="Export to Excel", command=export_to_excel)
+    export_button = ttk.Button(status_frame, text="Export to Excel", command=export_to_excel(tracked_areas, history_lock))
     export_button.pack(side=tk.LEFT, padx=10)
 
     clear_button = ttk.Button(status_frame, text="Очистить графики", command=clear_history_and_plots)
@@ -1208,7 +1147,7 @@ def main():
                             (0, 255, 0), separator_width)
                     x_offset += w + separator_width
 
-        display_frame = update_tracking(combined_frame.copy())
+        display_frame = update_tracking(combined_frame.copy(), tracked_areas, tracking_enabled)
 
         with threading.Lock():
             for i, area in enumerate(tracked_areas):
