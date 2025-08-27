@@ -518,10 +518,11 @@ def mouse_callback(event, x, y, flags, param):
 
                 x1, y1, x2, y2 = area.coords
                 w, h = x2 - x1, y2 - y1
-                try:
-                    area.tracker = init_tracker(current_frame, (x1, y1, w, h))
-                except ValueError as e:
-                    print(f"Ошибка: {e}. Пропускаем некорректный bbox.")
+                #Пока не работает трекинг и не нужен
+                # try:
+                #     area.tracker = init_tracker(current_frame, (x1, y1, w, h))
+                # except ValueError as e:
+                #     print(f"Ошибка: {e}. Пропускаем некорректный bbox.")
 
         return
 
@@ -596,7 +597,8 @@ def mouse_callback(event, x, y, flags, param):
                 x1, x2 = sorted([x1, x2])
                 y1, y2 = sorted([y1, y2])
                 area.coords = [x1, y1, x2, y2]
-                area.tracker = init_tracker(current_frame, (x1, y1, w, h))
+                #Пока не работает трекинг и не нужен
+                # area.tracker = init_tracker(current_frame, (x1, y1, w, h))
                 area.active = True
                 update_plots()
 
