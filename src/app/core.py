@@ -1,12 +1,13 @@
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(max_workers=30)
 
+from .utils import center_window_winapi, get_available_cameras, get_available_cameras_mini
+from .ocr import reader, process_image
 from .video_gui import run_dial_video_gui
 from multiprocessing import cpu_count
 from collections import deque
 from PIL import Image, ImageTk
 import cv2
-import easyocr
 import pytesseract
 import numpy as np
 import time
@@ -22,16 +23,7 @@ from datetime import datetime
 from itertools import count
 from tkinter import filedialog
 from tkinter import messagebox
-import ctypes
-import ctypes.wintypes
 import os
-import psutil
-import signal
-
-# !!!!Указываем путь к Tesseract!!!!
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-
-reader = easyocr.Reader(['en'], gpu=True)
 
 @dataclass
 class TrackedArea:
@@ -118,58 +110,8 @@ def toggle_recognition_display(show):
         update_recognition_display()
 
 
-
-def center_window_winapi(window_name):
-    try:
-        user32 = ctypes.WinDLL('user32')
-        hwnd = user32.FindWindowW(None, window_name)
-        if hwnd:
-            screen_width = user32.GetSystemMetrics(0)
-            screen_height = user32.GetSystemMetrics(1)
-            rect = ctypes.wintypes.RECT()
-            user32.GetWindowRect(hwnd, ctypes.byref(rect))
-            window_width = rect.right - rect.left
-            window_height = rect.bottom - rect.top
-            x = (screen_width - window_width) // 2
-            y = (screen_height - window_height) // 2
-            user32.SetWindowPos(
-                hwnd, 
-                0,
-                x, y, 
-                0, 0,
-                0x0001 | 0x0004
-            )
-    except:
-        pass
-
-def get_available_cameras(max_tests=5):
-    available = []
-    for i in range(max_tests):
-        for api in [cv2.CAP_MSMF, cv2.CAP_DSHOW, cv2.CAP_ANY]:
-            try:
-                cap = cv2.VideoCapture(i, api)
-                if cap.isOpened():
-                    ret, _ = cap.read()
-                    if ret:
-                        available.append(i)
-                    cap.release()
-                    break
-                cap.release()
-            except:
-                continue
-    return available
-
 def select_video_source():
     global VIDEO_PATHS, SPECIAL_VIDEO_PATH
-
-    def get_available_cameras(max_index=5):
-        cams = []
-        for i in range(max_index):
-            cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
-            if cap.isOpened():
-                cams.append(i)
-            cap.release()
-        return cams
 
     source_window = tk.Tk()
     source_window.title("Выбор источников видео")
@@ -179,7 +121,7 @@ def select_video_source():
     notebook = ttk.Notebook(source_window)
     notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
-    available_cameras = get_available_cameras()
+    available_cameras = get_available_cameras_mini()
     camera_vars = []
     file_vars = []
     special_camera_var = tk.StringVar(value="")
