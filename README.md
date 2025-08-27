@@ -2,14 +2,14 @@
 
 py -m pip install --user pipx
 
-pipx ensurepath ИЛИ py -m pipx ensurepath
+pipx ensurepath или py -m pipx ensurepath
 
 pipx install poetry
 
 poetry install 
 
 
-ЗАПУСК ПРОГРАММЫ:  poetry run digitize
+ЗАПУСК ПРОГРАММЫ:  poetry run digitize или python -m app.cli
 
 
 
