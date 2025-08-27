@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(max_workers=30)
 
+from .preprocess import change_image
 from .export import export_to_excel
 from .tracking import init_tracker, update_tracking
 from .utils import center_window_winapi, get_available_cameras, get_available_cameras_mini
@@ -311,12 +312,6 @@ def show_special_video():
     print(">>> Поток спецвидео завершён")
 
 
-def adjust_contrast(frame, contrast=2.1):
-    frame = frame.astype('float32')
-    frame = frame * contrast
-    frame = np.clip(frame, 0, 255)
-    return frame.astype('uint8')
-
 def process_image(roi, area_id, timestamp):
     try:
         text1 = pytesseract.image_to_string(roi,
@@ -451,30 +446,6 @@ def update_plots():
     root_window.after(10, update_plots)
 
 
-def change_image(image, use_easyocr=False, roi=True, contrast_value=None):
-    global binary_value, contrast
-    #inverted_roi = cv2.bitwise_not(image)
-    fixed = image
-
-    if contrast_value is None:
-        contrast_value = contrast
-
-
-    adjusted_roi = adjust_contrast(fixed, contrast_value)
-    gray = cv2.cvtColor(adjusted_roi, cv2.COLOR_BGR2GRAY)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    contrast_enhanced = clahe.apply(gray)
-    blurred = cv2.GaussianBlur(contrast_enhanced, (3, 3), 0)
-    if enable_binary:
-        if binary_value == 0:
-            _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        else:
-            _, binary = cv2.threshold(blurred, binary_value, 255, cv2.THRESH_BINARY)
-        return binary
-    else:
-        return blurred
-
-
 def process_roi_async(frame, area_id):
     global change_image_enabled
     x1, y1, x2, y2 = tracked_areas[area_id].coords
@@ -506,7 +477,7 @@ def process_roi_async(frame, area_id):
         if change_image_enabled.get():
             #processed_roi = change_image(scaled_roi, False, False)
             contrast_value = tracked_areas[area_id].local_contrast
-            processed_roi = change_image(scaled_roi, False, False, contrast_value)
+            processed_roi = change_image(scaled_roi, enable_binary, binary_value, contrast, contrast_value )
         else:
             processed_roi = scaled_roi.copy()
         timestamp = time.time()
