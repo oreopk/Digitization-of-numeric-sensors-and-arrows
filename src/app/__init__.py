@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(max_workers=30)
 
-from video_gui_preserved_logic import run_dial_video_gui
+from .video_gui import run_dial_video_gui
 from multiprocessing import cpu_count
 from collections import deque
 from PIL import Image, ImageTk

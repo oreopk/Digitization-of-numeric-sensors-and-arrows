@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "digitization-of-numeric-sensors-and-arrows"
+version = "0.1.0"
+description = "Digitization-of-numeric-sensors-and-arrows"
+authors = ["PAVEL KOZIN <sart6zaV@yandex.ru>"]
+readme = "README.md"
+packages = [{ include = "app", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+opencv-python = ">=4.12.0.88,<5.0.0"
+numpy = "<2.3"
+pillow = "^10.4"
+pytesseract = "^0.3.13"
+matplotlib = "^3.9"
+easyocr = "^1.7.2"
+pandas = "^2.3.2"
+openpyxl = "^3.1.5"
+psutil = "^7.0.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.0"
+ruff = "^0.5"
+pytest = "^8.0"
+mypy = "^1.8"
+
+[tool.poetry.scripts]
+digitize = "app.cli:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
