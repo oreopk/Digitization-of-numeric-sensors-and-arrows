@@ -1240,7 +1240,6 @@ def main():
             if root_window:
                 root_window.after(0, update_time_label)
 
-        # Если нет ни одного кадра, пропускаем итерацию
         if not frames:
             continue
 
@@ -1260,7 +1259,7 @@ def main():
                 h, w = frame.shape[:2]
                 combined_frame[:h, x_offset:x_offset+w] = frame
                 if i < len(frames) - 1:
-                    # Добавляем разделитель
+                    # Линия разделитель
                     cv2.line(combined_frame, 
                             (x_offset + w, 0), 
                             (x_offset + w, max_height), 
@@ -1315,3 +1314,6 @@ def main():
     cv2.destroyAllWindows()
     if root_window:
         root_window.quit()
+
+# if __name__ == "__main__":  Раскоментировать, чтобы запускать программу через этот файлы
+#     select_video_source()
